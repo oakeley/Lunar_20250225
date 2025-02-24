@@ -25,17 +25,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install torch gymnasium ptan matplotlib moviepy opencv-python tensorboard
 ```
 
-### 3. Install ImageMagick (required for video overlays)
+### 3. Install ImageMagick and FFMPEG (required for video overlays and rendering)
 
 #### Ubuntu/Debian Linux
 ```bash
 sudo apt-get update
-sudo apt-get install imagemagick
-```
-
-#### Fedora/CentOS/RHEL Linux
-```bash
-sudo dnf install imagemagick  # or use yum for older versions
+sudo apt-get install imagemagick ffmpeg
 ```
 
 #### Windows
@@ -47,6 +42,7 @@ sudo dnf install imagemagick  # or use yum for older versions
 #### macOS
 ```bash
 brew install imagemagick
+brew install ffmpeg
 ```
 
 ### 4. Fix ImageMagick Security Policy (Linux only)
@@ -117,6 +113,22 @@ sudo ./imagemagick-policy-fix.sh
 - `comparison-plotter.py`: Tool for generating comparative analysis plots
 - `moviepy-config-fix.py`: Utility to configure MoviePy to find ImageMagick
 - `imagemagick-policy-fix.sh`: Script to fix ImageMagick security policies on Linux
+
+Ensure your project directory is structured as follows:
+
+```
+your_project_directory/
+├── lunar-lander-enhanced.py
+├── video-generator.py
+├── video-generator-standalone.py
+├── comparison-plotter.py
+├── moviepy-config-fix.py
+├── imagemagick-policy-fix.sh
+├── lib/
+│   ├── __init__.py
+│   ├── model.py
+│   └── common.py
+```
 
 ## Usage
 
