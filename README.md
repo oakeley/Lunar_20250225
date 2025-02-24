@@ -6,6 +6,7 @@ This project is the third attempt at this lunar landing model. I have tried to i
 
 #### Dueling DQN Architecture
 **What it is:** Separates the estimation of state value and action advantage in the network architecture.
+
 **Why it's better:** Enables more efficient value learning by isolating the value of being in a state from the advantage of taking specific actions in that state. This is particularly valuable in the lunar lander task, where certain states (e.g., stable hovering above landing pad) are inherently valuable regardless of the specific action.
 ```python
 # Combines value and advantage streams
@@ -14,6 +15,7 @@ return value + advantage - advantage.mean(dim=1, keepdim=True)
 
 #### Layer Normalization
 **What it is:** Normalizes the activations within each layer to stabilize training.
+
 **Why it's better:** More stable than batch normalization for RL, works with any batch size, and reduces sensitivity to hyperparameters.
 ```python
 self.net = nn.Sequential(
@@ -28,6 +30,7 @@ self.net = nn.Sequential(
 
 #### PPO-style Policy Clipping
 **What it is:** Limits the size of policy updates to prevent destructively large changes.
+
 **Why it's better:** Provides more stable learning by ensuring policy updates don't deviate too much from the previous policy, leading to more consistent improvement.
 ```python
 # PPO-style objective with clipping
@@ -39,6 +42,7 @@ loss_policy_v = -torch.min(surr1_v, surr2_v).mean()
 
 #### Generalized Advantage Estimation (GAE)
 **What it is:** A technique that balances bias and variance in policy gradient methods.
+
 **Why it's better:** Produces more accurate advantage estimates by considering future rewards with exponentially decaying weights, leading to more informed policy updates.
 ```python
 delta = rewards[step] + gamma * values[step + 1] * (1 - dones[step]) - values[step]
@@ -47,6 +51,7 @@ gae = delta + gamma * gae_lambda * (1 - dones[step]) * gae
 
 #### Advantage Normalization
 **What it is:** Standardizes the advantage values used for policy updates.
+
 **Why it's better:** Stabilizes training by preventing very large or small advantages from causing extreme policy updates.
 ```python
 # Normalize advantages
@@ -57,6 +62,7 @@ adv_v = (adv_v - adv_v.mean()) / (adv_v.std() + 1e-8)
 
 #### Prioritized Experience Replay
 **What it is:** Samples important transitions more frequently based on TD error.
+
 **Why it's better:** Traditional uniform sampling wastes computation on frequent, easily-learned transitions. Prioritized replay focuses on the most informative experiences to accelerate learning.
 ```python
 # Update priorities based on TD error
@@ -66,6 +72,7 @@ buffer.update_priorities(indices, td_errors + 1e-5)
 
 #### N-step Returns
 **What it is:** Uses multi-step bootstrapping instead of single-step TD.
+
 **Why it's better:** By considering N future rewards directly before bootstrapping, we get more accurate value estimates with less bias.
 ```python
 # N-step bootstrapping (N=3)
@@ -74,6 +81,7 @@ expected_state_action_values = rewards_v + (GAMMA ** N_STEPS) * next_state_value
 
 #### Double Q-Learning
 **What it is:** Uses one network to select actions and another to evaluate them.
+
 **Why it's better:** Reduces overestimation bias in Q-values by decoupling action selection and evaluation.
 ```python
 # Next state values using Double Q-learning
@@ -85,6 +93,7 @@ next_state_values = tgt_net(next_states_v).gather(1, next_state_actions.unsqueez
 
 #### State Normalization
 **What it is:** Dynamically normalizes state values based on running statistics.
+
 **Why it's better:** Standardized inputs lead to more stable gradients and faster learning by keeping inputs within a consistent range.
 ```python
 norm_state = (state - self.state_mean) / (np.sqrt(self.state_std) + 1e-8)
@@ -92,6 +101,7 @@ norm_state = (state - self.state_mean) / (np.sqrt(self.state_std) + 1e-8)
 
 #### Reward Shaping
 **What it is:** Augments the environment's reward signal with domain-specific knowledge.
+
 **Why it's better:** Provides more informative learning signals by rewarding behaviors that lead to successful landings.
 ```python
 # Reward stability (low angular velocity and angle close to zero)
@@ -105,6 +115,7 @@ if leg1 and leg2:
 
 #### Optimized Action Discretization (for DQN)
 **What it is:** A smarter discretization of the continuous action space.
+
 **Why it's better:** Allows for more precise control during the critical landing phase while maintaining computational efficiency.
 ```python
 # Simple grid discretization with consistent dimensions
@@ -117,6 +128,7 @@ for m1 in np.linspace(-1, 1, discretize_count):
 
 #### Cosine Annealing Learning Rate Scheduling
 **What it is:** Gradually reduces learning rates following a cosine curve.
+
 **Why it's better:** Allows for larger initial steps for faster learning, then finer adjustments as training progresses.
 ```python
 lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100000, eta_min=LEARNING_RATE_DQN/10)
@@ -124,6 +136,7 @@ lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100000, eta
 
 #### Gradient Clipping
 **What it is:** Limits the magnitude of gradients during backpropagation.
+
 **Why it's better:** Prevents exploding gradients and stabilizes training, especially important for the critic.
 ```python
 torch.nn.utils.clip_grad_norm_(net_crt.parameters(), max_norm=0.5)
@@ -131,6 +144,7 @@ torch.nn.utils.clip_grad_norm_(net_crt.parameters(), max_norm=0.5)
 
 #### Optimized Hyperparameters
 **What it is:** Carefully tuned parameters based on research findings.
+
 **Why it's better:** Parameters like discount factor (GAMMA=0.995), entropy coefficient (ENTROPY_BETA=0.01), and network sizes are optimized specifically for control tasks like lunar lander.
 
 ## Performance Comparison
