@@ -165,13 +165,13 @@ Train the optimized models:
 
 ```bash
 # Train both models (A2C and DQN)
-python optimized-lunar-lander.py -n "both_optimized" --model both
+python lunar-lander.py -n "both_optimized" --model both
 
 # Train only A2C
-python optimized-lunar-lander.py -n "a2c_optimized" --model a2c
+python lunar-lander.py -n "a2c_optimized" --model a2c
 
 # Train only DQN
-python optimized-lunar-lander.py -n "dqn_optimized" --model dqn
+python lunar-lander.py -n "dqn_optimized" --model dqn
 ```
 
 ## Key Implementation Details
@@ -342,7 +342,7 @@ sudo ./imagemagick-policy-fix.sh
 
 ## Project Structure
 
-- `lunar-lander-enhanced.py`: Main training script for both A2C and DQN
+- `lunar-lander.py`: Main training script for both A2C and DQN
 - `video-generator.py`: Tool for creating videos with text overlays
 - `video-generator-standalone.py`: Simpler video generator (no ImageMagick needed)
 - `comparison-plotter.py`: Tool for generating comparative analysis plots
@@ -353,7 +353,7 @@ Ensure your project directory is structured as follows:
 
 ```
 your_project_directory/
-├── lunar-lander-enhanced.py
+├── lunar-lander.py
 ├── video-generator.py
 ├── video-generator-standalone.py
 ├── comparison-plotter.py
