@@ -1,0 +1,27 @@
+name: lunar2
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip=23.3.1
+  - pytorch=2.1.2
+  - torchvision
+  - cudatoolkit=11.8
+  - numpy=1.24.3
+  - gymnasium=0.29.1
+  - tensorboard=2.15.1
+  - matplotlib=3.8.2
+  - pyyaml=6.0.1
+  - git
+  - swig  # Added SWIG from conda-forge
+  - pip:
+    - git+https://github.com/Shmuma/ptan.git
+    - box2d-py==2.3.5  # Specify version explicitly
+    - "gymnasium[box2d]"
+    - "gymnasium[classic_control]"
+    
+variables:
+  PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:512"
