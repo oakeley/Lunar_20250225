@@ -194,7 +194,12 @@ You can adjust these parameters in the `lunar-lander-enhanced.py` file:
 You can monitor training progress with TensorBoard:
 
 ```bash
-tensorboard --logdir runs/
+tensorboard --logdir=./runs --load_fast=false
+```
+
+Then open a browser and point to
+```bash
+http://localhost:6006/
 ```
 
 ## Troubleshooting
