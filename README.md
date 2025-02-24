@@ -256,37 +256,28 @@ The implementation includes comprehensive TensorBoard logging and comparison plo
 - **Comparative analysis** of different algorithms
 - **Early termination** for efficient training
 
-## Installation
-
-### 1. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 2. Install Python dependencies:
-```bash
-pip install torch gymnasium ptan matplotlib moviepy opencv-python tensorboard
-```
-
-### 3. Install ImageMagick and FFMPEG (required for video overlays and rendering)
+### 1. Install ImageMagick, FFMPEG and SWIG (required for video overlays and rendering)
 
 #### Ubuntu/Debian Linux
 ```bash
 sudo apt-get update
-sudo apt-get install imagemagick ffmpeg
+sudo apt-get install imagemagick ffmpeg swig
 ```
 
-#### Windows
-1. Download the installer from [ImageMagick's official website](https://imagemagick.org/script/download.php#windows)
-2. Run the installer
-3. Check "Add application directory to your system path"
-4. Check "Install legacy utilities (e.g. convert)"
+### 2. Create a virtual environment:
 
-#### macOS
+#### conda:
 ```bash
-brew install imagemagick
-brew install ffmpeg
+conda env create -f lunar2.yml
+```
+#### Activate:
+```bash
+conda activate lunar2
+```
+
+### 3. Install tensorboard:
+```bash
+conda install tensorflow-base tensorboard
 ```
 
 ### 4. Fix ImageMagick Security Policy (Linux only)
