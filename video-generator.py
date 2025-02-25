@@ -17,8 +17,8 @@ import cv2
 # Import model classes from the training script
 sys.path.append('.')  # Ensure we can import from the current directory
 from lib import model
-from lunar_lander_enhanced import ModelDQN, AgentDQN, AgentA2C
-
+from lib.lunar_lander_enhanced import ModelDQN, AgentDQN, AgentA2C
+#from lib.lunar_lander import ModelDQN, AgentDQN, AgentA2C
 # Constants
 VIDEO_DIR = Path("videos")
 VIDEO_DIR.mkdir(exist_ok=True)
