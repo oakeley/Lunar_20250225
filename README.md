@@ -1,3 +1,278 @@
+# Lunar Lander Reinforcement Learning
+
+This repository implements and compares two reinforcement learning approaches for solving the Lunar Lander environment:
+1. **Advantage Actor-Critic (A2C)**
+2. **Deep Q-Network (DQN)**
+
+Both implementations use epsilon-greedy exploration strategies and include mechanisms for recording videos of successful landings and generating performance comparison plots.
+
+## Environment Description
+
+The Lunar Lander environment challenges an agent to safely land a spacecraft on a landing pad. The agent controls the main engine and side thrusters to navigate the lander to a successful touchdown.
+
+## Common Features
+
+Both implementations share these components:
+- Epsilon-greedy exploration with decay
+- Early termination on successful landing
+- Regular testing intervals
+- Video recording of successful landings
+- Performance tracking and visualization
+
+## A2C Implementation
+
+A2C combines policy-based and value-based learning with separate actor and critic networks.
+
+### Key Components
+
+#### Actor Network
+```python
+class ModelActor(nn.Module):
+    def __init__(self, obs_size, act_size):
+        super(ModelActor, self).__init__()
+        
+        self.net = nn.Sequential(
+            nn.Linear(obs_size, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, act_size)
+        )
+        self.logstd = nn.Parameter(torch.zeros(act_size))
+        
+    def forward(self, x):
+        return self.net(x)
+```
+
+#### Critic Network
+```python
+class ModelCritic(nn.Module):
+    def __init__(self, obs_size):
+        super(ModelCritic, self).__init__()
+        
+        self.net = nn.Sequential(
+            nn.Linear(obs_size, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1)
+        )
+        
+    def forward(self, x):
+        return self.net(x)
+```
+
+#### Agent with Epsilon-Greedy Exploration
+```python
+class AgentA2C(ptan.agent.BaseAgent):
+    def __init__(self, net, device="cpu", epsilon=0.0):
+        self.net = net
+        self.device = device
+        self.epsilon = epsilon
+        
+    def __call__(self, states, agent_states=None):
+        states_v = ptan.agent.float32_preprocessor(states).to(self.device)
+        mu_v = self.net(states_v)
+        mu = mu_v.data.cpu().numpy()
+        
+        actions = []
+        for mu_action in mu:
+            if np.random.random() < self.epsilon:
+                # Random action between -1 and 1 for each dimension
+                action = np.random.uniform(-1, 1, size=len(mu_action))
+            else:
+                # Use the original A2C action generation logic
+                logstd = self.net.logstd.data.cpu().numpy()
+                action = mu_action + np.exp(logstd) * np.random.normal(size=logstd.shape)
+                action = np.clip(action, -1, 1)
+            actions.append(action)
+        
+        return actions, agent_states
+```
+
+### Training Loop Highlights
+
+```python
+# Key A2C training steps
+for step_idx, exp in enumerate(exp_source):
+    # Update epsilon for exploration
+    epsilon = get_epsilon(step_idx)
+    agent.epsilon = epsilon
+    
+    # Process batch
+    states_v, actions_v, vals_ref_v = common.unpack_batch_a2c(batch, net_crt, last_val_gamma=GAMMA ** REWARD_STEPS, device=device)
+    
+    # Train critic network
+    opt_crt.zero_grad()
+    value_v = net_crt(states_v)
+    loss_value_v = F.mse_loss(value_v.squeeze(-1), vals_ref_v)
+    loss_value_v.backward()
+    opt_crt.step()
+    
+    # Train actor network
+    opt_act.zero_grad()
+    mu_v = net_act(states_v)
+    adv_v = vals_ref_v.unsqueeze(dim=-1) - value_v.detach()
+    log_prob_v = adv_v * model.calc_logprob(mu_v, net_act.logstd, actions_v)
+    loss_policy_v = -log_prob_v.mean()
+    entropy_loss_v = ENTROPY_BETA * (-(torch.log(2*math.pi*torch.exp(net_act.logstd)) + 1)/2).mean()
+    loss_v = loss_policy_v + entropy_loss_v
+    loss_v.backward()
+    opt_act.step()
+```
+
+## DQN Implementation
+
+DQN uses a Q-network to learn the value of state-action pairs, with a discretized action space for the continuous environment.
+
+### Key Components
+
+#### Q-Network
+```python
+class ModelDQN(nn.Module):
+    def __init__(self, obs_size, act_size):
+        super(ModelDQN, self).__init__()
+        
+        self.net = nn.Sequential(
+            nn.Linear(obs_size, 128),
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, act_size)
+        )
+        
+    def forward(self, x):
+        return self.net(x)
+```
+
+#### Discretizing Continuous Actions
+```python
+class AgentDQN(ptan.agent.BaseAgent):
+    def __init__(self, net, device="cpu", epsilon=0.05, discretize_count=DISCRETIZE_COUNT):
+        self.net = net
+        self.device = device
+        self.epsilon = epsilon
+        
+        # Create discretized action space for DQN
+        actions = []
+        for m1 in np.linspace(-1, 1, discretize_count):
+            for m2 in np.linspace(-1, 1, discretize_count):
+                actions.append([m1, m2])
+        self.actions = torch.FloatTensor(actions).to(device)
+        self.action_count = len(self.actions)
+```
+
+#### Experience Replay Buffer
+```python
+buffer = ptan.experience.ExperienceReplayBuffer(exp_source, buffer_size=REPLAY_SIZE)
+```
+
+### Training Loop Highlights
+
+```python
+# Key DQN training steps
+for step_idx in range(1, 1000000):
+    buffer.populate(1)
+    
+    # Update epsilon
+    epsilon = get_epsilon(step_idx)
+    agent.epsilon = epsilon
+    
+    # Sync target network periodically
+    if step_idx % TARGET_NET_SYNC == 0:
+        tgt_net.load_state_dict(net.state_dict())
+    
+    # Sample batch from replay buffer
+    batch = buffer.sample(BATCH_SIZE)
+    
+    # Get current Q values
+    q_vals_v = net(states_v)
+    q_vals_action = q_vals_v.gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
+    
+    # Get target Q values
+    next_q_vals_v = tgt_net(next_states_v)
+    next_q_vals_v[done_mask] = 0.0
+    next_q_v = next_q_vals_v.max(1)[0].detach()
+    target_q = rewards_v + GAMMA * next_q_v
+    
+    # Compute loss and update
+    loss_v = F.mse_loss(q_vals_action, target_q)
+    loss_v.backward()
+    optimizer.step()
+```
+
+## Why DQN Often Learns Faster But A2C Has More Stable Solutions
+
+### DQN's Early Learning Advantage
+
+1. **Experience Replay**: DQN reuses past experiences, making data usage more efficient
+   ```python
+   buffer = ptan.experience.ExperienceReplayBuffer(exp_source, buffer_size=REPLAY_SIZE)
+   batch = buffer.sample(BATCH_SIZE)
+   ```
+
+2. **Target Network**: Stabilizes learning by reducing moving target issues
+   ```python
+   if step_idx % TARGET_NET_SYNC == 0:
+       tgt_net.load_state_dict(net.state_dict())
+   ```
+
+3. **Simpler Objective**: Learning Q-values directly can be easier than simultaneously learning policy and value functions
+
+4. **Discrete Action Space**: The discretized action space reduces the exploration challenge
+   ```python
+   actions = []
+   for m1 in np.linspace(-1, 1, discretize_count):
+       for m2 in np.linspace(-1, 1, discretize_count):
+           actions.append([m1, m2])
+   ```
+
+### A2C's Superior Final Performance
+
+1. **True Continuous Actions**: Unlike DQN's discretized approach, A2C can produce truly continuous actions
+   ```python
+   logstd = self.net.logstd.data.cpu().numpy()
+   action = mu_action + np.exp(logstd) * np.random.normal(size=logstd.shape)
+   action = np.clip(action, -1, 1)
+   ```
+
+2. **Policy Gradient Advantage**: Learning a direct policy mapping can yield more precise control for complex continuous control tasks
+
+3. **Entropy Regularization**: Helps A2C maintain exploration throughout training and avoid premature convergence
+   ```python
+   entropy_loss_v = ENTROPY_BETA * (-(torch.log(2*math.pi*torch.exp(net_act.logstd)) + 1)/2).mean()
+   loss_v = loss_policy_v + entropy_loss_v
+   ```
+
+4. **Parallel Environment Training**: A2C often uses multiple parallel environments for more stable gradient updates
+   ```python
+   envs = [EarlyTerminationWrapper(gym.make(env_id, continuous=True)) for _ in range(ENVS_COUNT)]
+   ```
+
+## Usage
+
+To train both models and compare performance:
+```bash
+python train.py --name "comparison_run" --model both
+```
+
+To train just one model:
+```bash
+python train.py --name "a2c_only" --model a2c
+# or
+python train.py --name "dqn_only" --model dqn
+```
+
+After training, check:
+- `videos/` directory for recordings of successful landings
+- `plots/` directory for performance comparison visualizations
+
+## Conclusion
+
+While DQN often excels in early learning due to its sample efficiency and stable learning dynamics, A2C typically achieves more precise and stable final policies for continuous control tasks like Lunar Lander due to its ability to output true continuous actions and maintain exploration throughout training.
+
+
+
 # A2C vs DQN with optimizations for Lunar Landing
 
 This project is the third attempt at this lunar landing model. I have tried to implement everything in the course plus some extra steps from the Internet to try to find a good way of solving this problem (better than the simple DQN that solved it very quickly on week 1... ho hum).
